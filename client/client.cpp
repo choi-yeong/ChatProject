@@ -5,8 +5,8 @@
 #include <string>
 
 #pragma comment(lib, "ws2_32.lib")
-
-
+std::string ip_adrs = "192.168.1.223";
+int port_num = 15410;
 
 // 클라이언트 클래스를 정의
 class Client {
@@ -123,6 +123,6 @@ void Client::connectToServer(const std::string& ip, int port) {
 // 프로그램 진입점
 int main() {
     Client client; // client 객체 생성
-    client.connectToServer("192.168.1.223", 15410);
+    client.connectToServer(ip_adrs, port_num);
     return 0;
 }

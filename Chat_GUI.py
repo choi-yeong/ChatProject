@@ -6,6 +6,8 @@ import json
 import os
 
 DB_PATH = "users.json"
+IP_ADRS = "192.168.1.223"
+PORT = 15410
 
 def login_user(username, password):
     if not os.path.exists(DB_PATH): #유저목록이 없을경우 false 반환
@@ -104,7 +106,7 @@ class ChatClient(tk.Frame):
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            self.socket.connect(("127.0.0.1", 15410))
+            self.socket.connect((IP_ADRS, PORT))
             self.socket.send(self.username.encode('euc-kr'))  # 서버에 첫 메시지로 닉네임 전송
             threading.Thread(target=self.receive_messages, daemon=True).start()
         except Exception as e:
@@ -124,13 +126,17 @@ class ChatClient(tk.Frame):
     def receive_messages(self):
         while True:
             try:
+                # 데이터를 읽어온다.
                 data = self.socket.recv(1024)
-                if not data:
+                if not data:  # 연결이 끊어졌을 경우
                     break
                 msg = data.decode('euc-kr')
-                self.add_message(msg, sender="other")
-            except:
-                break
+
+                # 메시지가 비어있는지 체크 (중복된 공백 메시지를 방지)
+                if msg.strip():  # 공백이 아닌 메시지만 처리
+                    self.add_message(msg, sender="other")
+            except Exception as e:
+                break  # 예외가 발생하면 종료
         self.add_message("서버 연결 종료됨.", sender="system")
 
     def add_message(self, text, sender="other"):
@@ -192,7 +198,7 @@ class App(tk.Tk):
     def show_chat(self, username):
         if self.current_frame:
             self.current_frame.destroy()
-        self.title("채팅창")
+        self.title(f"채팅창-{username}님")
         self.current_frame = ChatClient(self, username)
         self.current_frame.pack(expand=True, fill="both")
 

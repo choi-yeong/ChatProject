@@ -40,7 +40,7 @@ void broadcast_message(const std::string& message, SOCKET sender_socket = INVALI
     }
 }
 
-// 각 클라이언트를 처리하는 쓰레드 함수
+// 클라이언트 처리 함수 수정
 void handle_client(SOCKET client_socket) {
     char buffer[1024];
     // 클라이언트로부터 첫 메시지를 닉네임으로 수신
@@ -57,9 +57,13 @@ void handle_client(SOCKET client_socket) {
     {
         std::lock_guard<std::mutex> lock(clients_mutex);
         client_names[client_socket] = nickname;
+        client_sockets.push_back(client_socket); // 클라이언트 소켓 추가
     }
-
-
+    // 현재 접속 클라이언트 수 출력
+    {
+        std::lock_guard<std::mutex> lock(clients_mutex);
+        std::cout << "현재 접속인원: " << client_sockets.size() << "명" << std::endl;
+    }
     while (server_running) {
         ZeroMemory(buffer, sizeof(buffer)); // 버퍼 초기화
         int bytes = recv(client_socket, buffer, sizeof(buffer) - 1, 0); // 클라이언트로부터 데이터 수신
@@ -76,10 +80,8 @@ void handle_client(SOCKET client_socket) {
         }
         std::string msg(buffer); // 아래는 콘솔에 메시지를 표시하는 것이다.
         std::cout << "[" << std::time(nullptr) << "]" << client_names[client_socket] << "(" << client_socket << ") : " << msg << std::endl;
-        client_sockets.push_back(client_socket);
         std::string full_message = client_names[client_socket] + ": " + msg;
-        broadcast_message(full_message, client_socket);
-
+        broadcast_message(full_message, client_socket); // 메시지 전송
     }
 
     // 클라이언트 연결 해제 처리
@@ -91,6 +93,7 @@ void handle_client(SOCKET client_socket) {
 
     closesocket(client_socket); // 클라이언트 소켓 닫기
 }
+
 
 // Ctrl+C 등 종료 신호를 처리하는 함수
 void signal_handler(int signal) {
@@ -195,11 +198,9 @@ int main() {
                 closesocket(client_socket);
                 continue;
             }
-
-            client_sockets.push_back(client_socket);
         }
         
-        std::cout << "새로운 유저 접속(" << client_socket << "), 현재 접속인원 : " << client_sockets.size() << "명" << std::endl;
+        std::cout << "새로운 유저 접속(" << client_socket << ")" << std::endl;
 
         std::thread t(handle_client, client_socket);
         t.detach();
