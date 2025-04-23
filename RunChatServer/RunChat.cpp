@@ -9,8 +9,6 @@
 #include <ctime>
 #include <map>
 #include <windows.h>
-
-#include "../로그인 기능/login.h" // 로그인 기능을 위한 헤더파일
 std::map<SOCKET, std::string> client_names; // 클라이언트 소켓과 닉네임을 서로 통용한다.
 #pragma comment(lib, "ws2_32.lib")
 
@@ -199,7 +197,7 @@ int main() {
                 continue;
             }
         }
-        
+
         std::cout << "새로운 유저 접속(" << client_socket << ")" << std::endl;
 
         std::thread t(handle_client, client_socket);

@@ -83,14 +83,14 @@ class ChatClient(tk.Frame):
         self.chat_frame = tk.Frame(self, bg='#f3e1ff')
         self.canvas = tk.Canvas(self.chat_frame, bg='#f3e1ff', highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(self.chat_frame, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = tk.Frame(self.canvas, bg='#f3e1ff')
+        self.scrollable_frame = tk.Frame(self.canvas, bg='#f3e1ff', width=400)
 
         self.scrollable_frame.bind(
             "<Configure>",
             lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
         )
 
-        self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        self.canvas.create_window((0, 0), window=self.scrollable_frame,anchor="nw", width=400)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         self.chat_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -116,9 +116,9 @@ class ChatClient(tk.Frame):
         msg = self.msg_entry.get().strip()
         if msg:
             try:
-                full_msg=f"{self.username}:{msg}"
-                self.socket.send(msg.encode('euc-kr'))
-                self.add_message(msg, sender=self.username)
+                full_msg = msg
+                self.socket.send(full_msg.encode('euc-kr'))  # 여기에 전체 메시지를 보내야 함
+                self.add_message(msg, sender=self.username)  # 여기서는 메시지만 보여줘도 됨
             except Exception as e:
                 self.add_message(f"[오류] 메시지 전송 실패: {e}", sender="system")
             self.msg_entry.delete(0, tk.END)
@@ -131,22 +131,31 @@ class ChatClient(tk.Frame):
                 if not data:  # 연결이 끊어졌을 경우
                     break
                 msg = data.decode('euc-kr')
+                if msg.strip():
+                # "닉네임: 메시지" 형식에서 닉네임과 메시지를 나눔
+                    if ":" in msg:
+                        nickname, text = msg.split(":", 1)
+                        nickname = nickname.strip()
+                        text = text.strip()
 
-                # 메시지가 비어있는지 체크 (중복된 공백 메시지를 방지)
-                if msg.strip():  # 공백이 아닌 메시지만 처리
-                    self.add_message(msg, sender="other")
+                        # 본인 메시지이면 오른쪽 정렬
+                        if nickname == self.username:
+                            self.add_message(text, sender=self.username)
+                        else:
+                            self.add_message(f"{nickname}: {text}", sender="other")
             except Exception as e:
                 break  # 예외가 발생하면 종료
         self.add_message("서버 연결 종료됨.", sender="system")
 
-    def add_message(self, text, sender="other"):
+    def add_message(self, text, sender):
         wrapper = tk.Frame(self.scrollable_frame, bg="#f3e1ff")
-        wrapper.pack(fill="both", pady=3, anchor="e" if sender == self.username else "w", padx=10)
+        wrapper.pack(fill="both", pady=3, anchor="e" if sender == self.username else "w", padx=5)
 
         if sender == self.username:
             bg_color = "#f9f1fe"
             anchor = "e"
             name = f"{self.username}(나)"
+            wrapper.pack(fill="both", pady=3, anchor="e", padx=10)
         elif sender == "other":
             bg_color = "#f2f2f2"
             anchor = "w"
@@ -154,6 +163,7 @@ class ChatClient(tk.Frame):
                 name, text = text.split(": ",1)
             else:
                 name="익명의 상대방"
+            wrapper.pack(fill="both", pady=3, anchor="w", padx=10)
         else:
             bg_color = "#ffecec"
             anchor = "center"
